@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="candidates.html">Candidates</a></li>
+      <li><a href="results.html" class="active">Results</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap">
+    <div class="eyebrow">Live tally</div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:8px;">
+      <h1 style="font-size:30px;" id="election-title">MUSO 2026 General Election Results</h1>
+      <span class="badge" id="election-badge">—</span>
+    </div>
+    <p style="margin-bottom:30px;">Results update in real time as votes are cast. Final winners are declared once the election closes.</p>
+
+    <div class="grid grid-4" style="margin-bottom:34px;" id="summary-tiles"></div>
+
+    <div id="results-container"></div>
+
+    <div class="glass card" style="margin-top:10px;">
+      <div class="eyebrow">Turnout by faculty</div>
+      <div style="max-width:560px; margin:0 auto;"><canvas id="turnoutChart" height="220"></canvas></div>
+    </div>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  const election = DB.elections.all()[0];
+  const positions = election ? DB.positions.all().filter(p => p.electionId === election.id) : [];
+  const votes = DB.votes.all();
+  const students = DB.students.all();
+
+  if (election){
+    document.getElementById('election-title').textContent = election.title + ' — Results';
+    const badge = document.getElementById('election-badge');
+    badge.textContent = election.status;
+    badge.className = 'badge ' + electionStatusBadge(election.status);
+  }
+
+  const totalVotes = votes.length;
+  const distinctVoters = new Set(votes.map(v => v.studentId)).size;
+  const turnoutPct = students.length ? Math.round((distinctVoters/students.length)*100) : 0;
+
+  document.getElementById('summary-tiles').innerHTML = `
+    <div class="stat glass"><div class="num">${students.length}</div><div class="lbl">Registered students</div></div>
+    <div class="stat glass"><div class="num">${distinctVoters}</div><div class="lbl">Students who voted</div></div>
+    <div class="stat glass"><div class="num">${turnoutPct}%</div><div class="lbl">Voter turnout</div></div>
+    <div class="stat glass"><div class="num">${totalVotes}</div><div class="lbl">Total votes cast</div></div>
+  `;
+
+  const palette = ['#4F46E5','#D4AF37','#2ECC71','#F0556B','#818CF8','#E9B949'];
+
+  const container = document.getElementById('results-container');
+  container.innerHTML = positions.map((pos, idx) => {
+    const candidates = DB.candidates.all().filter(c => c.positionId === pos.id && c.status === 'Approved');
+    const tallies = candidates.map(c => ({
+      candidate: c,
+      count: votes.filter(v => v.positionId === pos.id && v.candidateId === c.id).length
+    })).sort((a,b) => b.count - a.count);
+    const posTotalVotes = tallies.reduce((s,t) => s+t.count, 0);
+    const leader = tallies[0];
+    const isDecisive = posTotalVotes > 0 && leader && leader.count > 0;
+
+    return `
+      <div class="glass card" style="margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap; margin-bottom:18px;">
+          <div>
+            <h3 style="font-size:18px; margin-bottom:4px;">${escapeHtml(pos.title)}</h3>
+            <p style="font-size:12px;">${posTotalVotes} vote${posTotalVotes!==1?'s':''} cast for this position</p>
+          </div>
+          ${isDecisive ? `
+            <div class="badge badge-completed" style="padding:8px 16px;">🏆 Leading: ${escapeHtml(leader.candidate.name)}</div>
+          ` : `<div class="badge badge-upcoming">No votes yet</div>`}
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:24px; align-items:center;">
+          <div>
+            ${tallies.map(t => {
+              const pct = posTotalVotes ? Math.round((t.count/posTotalVotes)*100) : 0;
+              return `
+                <div style="margin-bottom:14px;">
+                  <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+                    <span>${escapeHtml(t.candidate.name)}</span>
+                    <span class="tag-mono">${t.count} votes · ${pct}%</span>
+                  </div>
+                  <div style="height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden;">
+                    <div style="height:100%; width:${pct}%; background:linear-gradient(90deg, var(--indigo), var(--gold));"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          <div><canvas id="chart-${pos.id}" height="180"></canvas></div>
+        </div>
+      </div>
+    `;
+  }).join('') || `<div class="empty-state">No positions to display yet.</div>`;
+
+  positions.forEach(pos => {
+    const candidates = DB.candidates.all().filter(c => c.positionId === pos.id && c.status === 'Approved');
+    const counts = candidates.map(c => votes.filter(v => v.positionId===pos.id && v.candidateId===c.id).length);
+    const ctx = document.getElementById('chart-' + pos.id);
+    if (!ctx || !window.Chart) return;
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: candidates.map(c => c.name),
+        datasets: [{ data: counts, backgroundColor: palette, borderWidth: 0 }]
+      },
+      options: {
+        plugins: { legend: { position:'bottom', labels:{ color:'#9BA4BD', font:{ size:11 } } } }
+      }
+    });
+  });
+
+  // Turnout by faculty (bar)
+  const faculties = [...new Set(students.map(s => s.faculty))];
+  const turnoutByFaculty = faculties.map(f => {
+    const inFaculty = students.filter(s => s.faculty === f).map(s => s.id);
+    const voted = new Set(votes.filter(v => inFaculty.includes(v.studentId)).map(v => v.studentId)).size;
+    return inFaculty.length ? Math.round((voted/inFaculty.length)*100) : 0;
+  });
+  const turnoutCtx = document.getElementById('turnoutChart');
+  if (turnoutCtx && window.Chart){
+    new Chart(turnoutCtx, {
+      type: 'bar',
+      data: {
+        labels: faculties,
+        datasets: [{ label:'Turnout %', data: turnoutByFaculty, backgroundColor:'#4F46E5', borderRadius:6 }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero:true, max:100, ticks:{ color:'#9BA4BD' }, grid:{ color:'rgba(255,255,255,.06)' } },
+          x: { ticks:{ color:'#9BA4BD' }, grid:{ display:false } }
+        },
+        plugins: { legend: { display:false } }
+      }
+    });
+  }
+</script>
+</body>
+</html>

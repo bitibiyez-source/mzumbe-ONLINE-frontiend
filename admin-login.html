@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>Electoral Commission</span></div>
+    </div>
+    <ul class="nav-links"></ul>
+    <div class="nav-actions">
+      <a href="index.html" class="btn btn-ghost btn-sm">← Back to site</a>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap" style="max-width:420px;">
+    <div class="eyebrow center" style="justify-content:center;">Returning officer access</div>
+    <h1 style="font-size:28px; text-align:center; margin-bottom:8px;">Electoral Commission login</h1>
+    <p style="text-align:center; margin-bottom:30px;">Restricted to authorised election administrators only.</p>
+
+    <div class="glass card">
+      <form id="admin-login-form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password">
+          <div class="field-error" id="login-error">Incorrect username or password.</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Log in to dashboard</button>
+      </form>
+    </div>
+
+    <div class="glass card" style="margin-top:18px; font-size:12px;">
+      <strong style="color:var(--text);">Demo credentials:</strong> Username <code class="tag-mono">admin</code> · Password <code class="tag-mono">admin123</code>
+    </div>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  document.getElementById('admin-login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const admin = DB.admins.all().find(a => a.username.toLowerCase() === username.toLowerCase());
+    const errEl = document.getElementById('login-error');
+
+    if (!admin || admin.password !== password){
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+    DB.session.set({ role:'admin', id: admin.id });
+    DB.logAudit('ADMIN_LOGIN', `Admin ${admin.username} logged in.`);
+    window.location.href = 'admin.html';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="candidates.html">Candidates</a></li>
+      <li><a href="results.html">Results</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap" style="max-width:640px;">
+    <div class="eyebrow center" style="justify-content:center;">Voter registration</div>
+    <h1 style="font-size:30px; text-align:center; margin-bottom:8px;">Create your voter account</h1>
+    <p style="text-align:center; margin-bottom:30px;">Your details are matched against your student record to verify eligibility.</p>
+
+    <form id="register-form" class="glass card">
+      <div class="field-row">
+        <div class="field">
+          <label for="fullName">Full name</label>
+          <input type="text" id="fullName" placeholder="e.g. Asha Mwakipesile" required>
+        </div>
+        <div class="field">
+          <label for="regNo">Registration number</label>
+          <input type="text" id="regNo" placeholder="T22-03-1102" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@mzumbe.ac.tz" required>
+        </div>
+        <div class="field">
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" placeholder="0712 345 678" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="gender">Gender</label>
+          <select id="gender" required>
+            <option value="">Select gender</option>
+            <option>Female</option>
+            <option>Male</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="faculty">Faculty / School</label>
+          <input type="text" id="faculty" placeholder="School of Business" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="department">Department</label>
+          <input type="text" id="department" placeholder="Marketing" required>
+        </div>
+        <div class="field">
+          <label for="course">Course / Programme</label>
+          <input type="text" id="course" placeholder="BBA" required>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="year">Year of study</label>
+          <select id="year" required>
+            <option value="">Select year</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="password">Create password</label>
+          <input type="password" id="password" placeholder="At least 6 characters" required minlength="6">
+        </div>
+      </div>
+
+      <div class="checkbox-row" style="margin-bottom:22px;">
+        <input type="checkbox" id="agree" required>
+        <label for="agree" style="text-transform:none; font-weight:400; font-size:13px; color:var(--text-dim);">I confirm these details are accurate and I am eligible to vote in the MUSO 2026 General Election.</label>
+      </div>
+
+      <div class="field-error" id="register-error" style="margin-bottom:14px;">This registration number is already in use.</div>
+
+      <button type="submit" class="btn btn-primary btn-block">Create my account</button>
+      <p class="center" style="font-size:13px; margin-top:18px;">Already registered? <a href="login.html" style="color:var(--gold-soft);">Log in instead</a></p>
+    </form>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  document.getElementById('register-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const regNo = document.getElementById('regNo').value.trim();
+    const errEl = document.getElementById('register-error');
+    const exists = DB.students.all().some(s => s.regNo.toLowerCase() === regNo.toLowerCase());
+
+    if (exists){
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    const student = {
+      id: DB.uid('STU'),
+      regNo,
+      fullName: document.getElementById('fullName').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      gender: document.getElementById('gender').value,
+      faculty: document.getElementById('faculty').value.trim(),
+      department: document.getElementById('department').value.trim(),
+      course: document.getElementById('course').value.trim(),
+      year: Number(document.getElementById('year').value),
+      password: document.getElementById('password').value,
+      photo: '',
+      status: 'active'
+    };
+
+    DB.students.save(student);
+    DB.logAudit('REGISTER', `New student registered: ${student.regNo}.`);
+    DB.session.set({ role:'student', id: student.id });
+    toast('Account created. Welcome to MUSO 2026!', 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 700);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cast Your Vote — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="candidates.html">Candidates</a></li>
+      <li><a href="vote.html" class="active">Vote</a></li>
+      <li><a href="results.html">Results</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div class="icon-btn" data-user-initials style="background:var(--indigo); color:#fff;">--</div>
+      <button class="btn btn-ghost btn-sm" data-logout="student">Log out</button>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap" style="max-width:760px;">
+
+    <div class="eyebrow">Official ballot</div>
+    <h1 style="font-size:30px; margin-bottom:8px;" id="election-title">—</h1>
+    <p style="margin-bottom:26px;">Select one candidate per position below. You can move between positions before submitting — each vote is confirmed and locked individually.</p>
+
+    <div class="glass card" style="margin-bottom:30px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="field-hint" style="margin-bottom:6px;">BALLOT PROGRESS</div>
+        <div id="progress-text" style="font-family:var(--f-display); font-size:18px;">0 of 0 positions voted</div>
+      </div>
+      <div style="width:160px; height:8px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden;">
+        <div id="progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--indigo), var(--gold)); transition:width .3s;"></div>
+      </div>
+    </div>
+
+    <div id="ballot-container"></div>
+
+  </div>
+</main>
+
+<!-- Confirm vote modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h3>Confirm your vote</h3>
+    <p style="font-size:13px; margin-bottom:18px;">You are about to vote for <strong id="confirm-candidate" style="color:var(--text);"></strong> for <strong id="confirm-position" style="color:var(--text);"></strong>. This cannot be changed once submitted.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-block" data-modal-close>Go back</button>
+      <button class="btn btn-gold btn-block" id="confirm-submit">Confirm &amp; submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Success modal -->
+<div class="modal-overlay" id="success-modal">
+  <div class="modal center">
+    <div style="width:60px; height:60px; border-radius:50%; background:var(--success-bg); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 16px;">✓</div>
+    <h3 style="margin-bottom:8px;">Vote recorded</h3>
+    <p style="font-size:13px; margin-bottom:20px;">Your vote has been securely recorded with a timestamp. Thank you for participating in MUSO 2026.</p>
+    <button class="btn btn-primary btn-block" data-modal-close>Continue</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  const session = requireAuth('student');
+  let pendingVote = null;
+
+  if (session){
+    const me = currentStudent();
+    const election = DB.elections.all().find(e => e.status === 'Active');
+
+    if (!election){
+      document.getElementById('ballot-container').innerHTML = `<div class="empty-state glass card">There is no active election open for voting right now.</div>`;
+    } else {
+      document.getElementById('election-title').textContent = election.title;
+      renderBallot();
+    }
+
+    function renderBallot(){
+      const positions = DB.positions.all().filter(p => p.electionId === election.id && p.status === 'Active');
+      const myVotes = votesForStudentElection(me.id, election.id);
+      const done = myVotes.length;
+
+      document.getElementById('progress-text').textContent = `${done} of ${positions.length} positions voted`;
+      document.getElementById('progress-bar').style.width = positions.length ? (done/positions.length*100)+'%' : '0%';
+
+      document.getElementById('ballot-container').innerHTML = positions.map(pos => {
+        const voted = hasVotedFor(me.id, pos.id);
+        const myVote = voted ? DB.votes.all().find(v => v.studentId===me.id && v.positionId===pos.id) : null;
+        const candidates = DB.candidates.all().filter(c => c.positionId === pos.id && c.status === 'Approved');
+
+        return `
+          <div class="glass card" style="margin-bottom:22px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <h3 style="font-size:18px;">${escapeHtml(pos.title)}</h3>
+              ${voted ? `<span class="badge badge-active">✓ Voted</span>` : `<span class="badge badge-upcoming">Pending</span>`}
+            </div>
+            <p style="font-size:12px; margin-bottom:16px;">${escapeHtml(pos.description)}</p>
+            <div class="grid grid-2">
+              ${candidates.map(c => {
+                const isMine = myVote && myVote.candidateId === c.id;
+                return `
+                  <label class="candidate-card ${isMine ? 'selected':''} ${voted ? 'voted-locked':''}"
+                    style="${voted && !isMine ? 'opacity:.45; cursor:not-allowed;' : ''} ${voted ? 'pointer-events:'+(isMine?'none':'none')+';' : ''}"
+                    ${voted ? '' : `onclick="selectCandidate('${pos.id}','${c.id}','${escapeHtml(c.name)}','${escapeHtml(pos.title)}')"`}>
+                    <input type="radio" name="pos-${pos.id}" ${isMine ? 'checked' : ''}>
+                    <div style="display:flex; gap:12px; align-items:center;">
+                      <div class="candidate-avatar">${initials(c.name)}</div>
+                      <div>
+                        <div style="font-weight:700; font-size:14px;">${escapeHtml(c.name)}</div>
+                        <div class="tag-mono" style="font-size:11px;">${escapeHtml(c.department)}</div>
+                      </div>
+                    </div>
+                    <p style="font-size:12px; margin:10px 0 0; font-style:italic;">"${escapeHtml(c.slogan)}"</p>
+                    <div class="candidate-check">${isMine ? '✓' : ''}</div>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectCandidate(positionId, candidateId, candidateName, positionTitle){
+      pendingVote = { positionId, candidateId };
+      document.getElementById('confirm-candidate').textContent = candidateName;
+      document.getElementById('confirm-position').textContent = positionTitle;
+      document.getElementById('confirm-modal').classList.add('open');
+    }
+    window.selectCandidate = selectCandidate;
+
+    document.getElementById('confirm-submit').addEventListener('click', () => {
+      if (!pendingVote) return;
+
+      // Server-side-equivalent safety checks (still enforced even though this is a demo)
+      if (hasVotedFor(me.id, pendingVote.positionId)){
+        toast('You have already voted for this position.', 'error');
+        document.getElementById('confirm-modal').classList.remove('open');
+        return;
+      }
+
+      const vote = {
+        id: DB.uid('VOTE'),
+        studentId: me.id,
+        positionId: pendingVote.positionId,
+        candidateId: pendingVote.candidateId,
+        electionId: election.id,
+        timestamp: DB.nowISO()
+      };
+      DB.votes.save(vote);
+      DB.logAudit('VOTE_CAST', `Student cast a vote for position ${pendingVote.positionId}.`);
+
+      document.getElementById('confirm-modal').classList.remove('open');
+      document.getElementById('success-modal').classList.add('open');
+      pendingVote = null;
+      renderBallot();
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html" class="active">Dashboard</a></li>
+      <li><a href="candidates.html">Candidates</a></li>
+      <li><a href="vote.html">Vote</a></li>
+      <li><a href="results.html">Results</a></li>
+      <li><a href="profile.html">Profile</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div class="icon-btn" data-user-initials style="background:var(--indigo); color:#fff;">--</div>
+      <button class="btn btn-ghost btn-sm" data-logout="student">Log out</button>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:30px;">
+      <div>
+        <div class="eyebrow">Voter dashboard</div>
+        <h1 style="font-size:28px;">Welcome, <span data-user-name>Student</span></h1>
+      </div>
+      <a href="vote.html" class="btn btn-primary">Go to ballot →</a>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:30px;" id="stat-tiles"></div>
+
+    <div class="grid" style="grid-template-columns:1.5fr 1fr; gap:24px; margin-bottom:30px;">
+      <div class="glass card" id="election-panel"></div>
+
+      <div class="glass card">
+        <div class="eyebrow">My profile</div>
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+          <div class="candidate-avatar" id="profile-avatar" style="width:54px; height:54px; font-size:16px;"></div>
+          <div>
+            <div style="font-weight:700;" id="profile-name"></div>
+            <div class="tag-mono" id="profile-reg"></div>
+          </div>
+        </div>
+        <ul style="font-size:13px; display:flex; flex-direction:column; gap:8px; color:var(--text-dim);">
+          <li><strong style="color:var(--text);">Faculty:</strong> <span id="profile-faculty"></span></li>
+          <li><strong style="color:var(--text);">Department:</strong> <span id="profile-dept"></span></li>
+          <li><strong style="color:var(--text);">Year of study:</strong> <span id="profile-year"></span></li>
+        </ul>
+        <a href="profile.html" class="btn btn-outline btn-sm" style="margin-top:18px; width:100%;">Edit profile</a>
+      </div>
+    </div>
+
+    <div>
+      <div class="eyebrow">Announcements</div>
+      <div class="grid grid-2" id="announcements-list"></div>
+    </div>
+
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  const student = requireAuth('student');
+  if (student){
+    const me = currentStudent();
+    document.getElementById('profile-name').textContent = me.fullName;
+    document.getElementById('profile-reg').textContent = me.regNo;
+    document.getElementById('profile-faculty').textContent = me.faculty;
+    document.getElementById('profile-dept').textContent = me.department;
+    document.getElementById('profile-year').textContent = 'Year ' + me.year;
+    document.getElementById('profile-avatar').textContent = initials(me.fullName);
+
+    const election = DB.elections.all()[0];
+    const positions = election ? DB.positions.all().filter(p => p.electionId === election.id) : [];
+    const myVotes = election ? votesForStudentElection(me.id, election.id) : [];
+    const totalVotesCast = DB.votes.all().length;
+    const totalStudents = DB.students.all().length;
+    const turnout = totalStudents ? Math.round((new Set(DB.votes.all().map(v=>v.studentId)).size / totalStudents) * 100) : 0;
+
+    document.getElementById('stat-tiles').innerHTML = `
+      <div class="stat glass"><div class="num">${positions.length}</div><div class="lbl">Positions open</div></div>
+      <div class="stat glass"><div class="num">${myVotes.length}/${positions.length}</div><div class="lbl">Your ballot progress</div></div>
+      <div class="stat glass"><div class="num">${turnout}%</div><div class="lbl">Voter turnout</div></div>
+      <div class="stat glass"><div class="num">${totalVotesCast}</div><div class="lbl">Total votes cast</div></div>
+    `;
+
+    const panel = document.getElementById('election-panel');
+    if (election){
+      const complete = myVotes.length >= positions.length;
+      panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+          <div class="eyebrow" style="margin-bottom:0;">Active election</div>
+          <span class="badge ${electionStatusBadge(election.status)}">${election.status}</span>
+        </div>
+        <h3 style="font-size:20px; margin-bottom:8px;">${escapeHtml(election.title)}</h3>
+        <p style="font-size:13px; margin-bottom:18px;">${escapeHtml(election.description)}</p>
+        <div class="field-hint" style="margin-bottom:10px; text-transform:uppercase; letter-spacing:.05em; font-size:11px;">Time remaining</div>
+        <div class="countdown" id="countdown" style="margin-bottom:22px;"></div>
+        ${complete
+          ? `<div class="badge badge-active" style="padding:10px 18px;">✓ You have voted in all positions — thank you!</div>`
+          : `<a href="vote.html" class="btn btn-gold">Continue voting (${myVotes.length}/${positions.length} done)</a>`
+        }
+      `;
+      startCountdown(election.endDate, document.getElementById('countdown'));
+    } else {
+      panel.innerHTML = `<div class="empty-state">No active election right now. Check back soon.</div>`;
+    }
+
+    const list = document.getElementById('announcements-list');
+    const items = DB.announcements.all().filter(a => a.status === 'Published');
+    list.innerHTML = items.length ? items.map(a => `
+      <div class="glass card">
+        <div class="tag-mono" style="margin-bottom:10px;">${formatDate(a.publishDate)}</div>
+        <h4 style="font-size:15px; margin-bottom:8px;">${escapeHtml(a.title)}</h4>
+        <p style="font-size:13px;">${escapeHtml(a.content)}</p>
+      </div>
+    `).join('') : `<div class="empty-state">No announcements yet.</div>`;
+  }
+</script>
+</body>
+</html>

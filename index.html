@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUSO 2026 General Election — Mzumbe University Students Organisation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="candidates.html">Candidates</a></li>
+      <li><a href="results.html">Results</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+      <a href="register.html" class="btn btn-gold btn-sm">Register</a>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap">
+
+    <!-- HERO -->
+    <section style="display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; margin-bottom:60px;">
+      <div>
+        <div class="eyebrow">Ballot Number 2026 / MUSO-GE</div>
+        <h1 style="font-size:48px; margin-bottom:18px;">Cast the vote that<br>writes Mzumbe's<br><span style="color:var(--gold-soft);">next chapter.</span></h1>
+        <p style="font-size:16px; max-width:480px; margin-bottom:28px;">
+          The MUSO 2026 General Election Portal is the official, student-only platform for electing your
+          next Students' Organisation executive committee — President, Vice President, Secretary General
+          and Treasurer. One student, one vote, per position.
+        </p>
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+          <a href="register.html" class="btn btn-primary">Register to vote</a>
+          <a href="login.html" class="btn btn-outline">I already have an account</a>
+        </div>
+      </div>
+
+      <div class="stub card" style="padding-bottom:30px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+          <span class="badge" id="election-badge">Loading…</span>
+          <span class="stub-id" id="election-id">—</span>
+        </div>
+        <h3 style="font-size:20px; margin-bottom:6px;" id="election-title">—</h3>
+        <p style="font-size:13px; margin-bottom:22px;" id="election-desc">—</p>
+        <div class="field-hint" style="margin-bottom:10px; text-transform:uppercase; letter-spacing:.05em; font-size:11px;">Voting closes in</div>
+        <div class="countdown" id="countdown"></div>
+      </div>
+    </section>
+
+    <!-- GUIDELINES -->
+    <section class="glass card" style="margin-bottom:40px;">
+      <div class="eyebrow">Election guidelines</div>
+      <div class="grid grid-3">
+        <div>
+          <h4 style="font-size:16px; margin-bottom:8px;">01 · Verify your identity</h4>
+          <p style="font-size:13px;">Log in with your registration number and password. Each account maps to exactly one student record.</p>
+        </div>
+        <div>
+          <h4 style="font-size:16px; margin-bottom:8px;">02 · Review every position</h4>
+          <p style="font-size:13px;">Read each candidate's manifesto and leadership record before marking your ballot.</p>
+        </div>
+        <div>
+          <h4 style="font-size:16px; margin-bottom:8px;">03 · Vote once, confirm once</h4>
+          <p style="font-size:13px;">You may select one candidate per position. Votes are final once confirmed and cannot be edited.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section style="margin-bottom:40px;">
+      <div class="eyebrow">Latest election news</div>
+      <div class="grid grid-2" id="announcements-list"></div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="glass card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
+      <div>
+        <h3 style="font-size:18px; margin-bottom:6px;">Need help with your ballot?</h3>
+        <p style="font-size:13px;">Contact the MUSO Electoral Commission at <strong style="color:var(--text);">elections@mzumbe.ac.tz</strong> or call <strong style="color:var(--text);">+255 23 260 4380</strong>.</p>
+      </div>
+      <a href="login.html" class="btn btn-primary">Go to my dashboard</a>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:14px;">
+          <div class="brand-mark">MU</div>
+          <div class="brand-text"><strong>MUSO 2026</strong><span>General Election Portal</span></div>
+        </div>
+        <p style="font-size:13px; max-width:320px;">An official platform of the Mzumbe University Students Organisation for the 2026 General Election.</p>
+      </div>
+      <div>
+        <h4 style="font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin-bottom:14px;">Navigate</h4>
+        <ul style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+          <li><a href="candidates.html">Candidates</a></li>
+          <li><a href="results.html">Results</a></li>
+          <li><a href="admin-login.html">Electoral commission login</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin-bottom:14px;">Contact</h4>
+        <ul style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--text-dim);">
+          <li>elections@mzumbe.ac.tz</li>
+          <li>+255 23 260 4380</li>
+          <li>Mzumbe University, Morogoro</li>
+        </ul>
+      </div>
+    </div>
+    <hr class="divider">
+    <small>© 2026 Mzumbe University Students Organisation. Demo build — frontend prototype, not connected to a live backend.</small>
+  </div>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  const election = DB.elections.all()[0];
+  if (election){
+    document.getElementById('election-id').textContent = election.id;
+    document.getElementById('election-title').textContent = election.title;
+    document.getElementById('election-desc').textContent = election.description;
+    const badge = document.getElementById('election-badge');
+    badge.textContent = election.status;
+    badge.className = 'badge ' + electionStatusBadge(election.status);
+    startCountdown(election.endDate, document.getElementById('countdown'));
+  }
+
+  const list = document.getElementById('announcements-list');
+  const items = DB.announcements.all().filter(a => a.status === 'Published');
+  list.innerHTML = items.length ? items.map(a => `
+    <div class="glass card">
+      <div class="tag-mono" style="margin-bottom:10px;">${formatDate(a.publishDate)}</div>
+      <h4 style="font-size:15px; margin-bottom:8px;">${escapeHtml(a.title)}</h4>
+      <p style="font-size:13px;">${escapeHtml(a.content)}</p>
+    </div>
+  `).join('') : `<div class="empty-state">No announcements published yet.</div>`;
+</script>
+</body>
+</html>

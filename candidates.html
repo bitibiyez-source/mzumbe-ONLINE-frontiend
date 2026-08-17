@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candidates — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="candidates.html" class="active">Candidates</a></li>
+      <li><a href="results.html">Results</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap">
+    <div class="eyebrow">Meet the candidates</div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:26px;">
+      <h1 style="font-size:30px;">MUSO 2026 General Election candidates</h1>
+      <input type="text" id="search" placeholder="Search by name, department or position…" style="width:320px; padding:13px 16px; border-radius:999px; background:var(--glass); border:1px solid var(--glass-border); color:var(--text);">
+    </div>
+
+    <div id="positions-list"></div>
+  </div>
+</main>
+
+<!-- Candidate profile modal -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal" style="width:min(560px,100%);">
+    <div id="profile-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-block" data-modal-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  function candidateCardHTML(c){
+    return `
+      <div class="glass card" style="cursor:pointer;" onclick="openProfile('${c.id}')">
+        <div style="display:flex; gap:14px; align-items:center; margin-bottom:14px;">
+          <div class="candidate-avatar">${initials(c.name)}</div>
+          <div>
+            <div style="font-weight:700;">${escapeHtml(c.name)}</div>
+            <div class="tag-mono">${escapeHtml(c.regNo)}</div>
+          </div>
+        </div>
+        <p style="font-size:13px; margin-bottom:10px;">${escapeHtml(c.department)} · ${escapeHtml(c.faculty)} · Year ${c.year}</p>
+        <div class="badge badge-upcoming">"${escapeHtml(c.slogan)}"</div>
+      </div>
+    `;
+  }
+
+  function render(filter){
+    filter = (filter || '').toLowerCase();
+    const election = DB.elections.all()[0];
+    const positions = election ? DB.positions.all().filter(p => p.electionId === election.id) : [];
+    const container = document.getElementById('positions-list');
+
+    container.innerHTML = positions.map(pos => {
+      let cands = DB.candidates.all().filter(c => c.positionId === pos.id && c.status === 'Approved');
+      if (filter){
+        cands = cands.filter(c =>
+          c.name.toLowerCase().includes(filter) ||
+          c.department.toLowerCase().includes(filter) ||
+          pos.title.toLowerCase().includes(filter)
+        );
+      }
+      if (!cands.length) return '';
+      return `
+        <div style="margin-bottom:36px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+            <h3 style="font-size:18px;">${escapeHtml(pos.title)}</h3>
+            <span class="badge badge-upcoming">${cands.length} candidate${cands.length>1?'s':''}</span>
+          </div>
+          <div class="grid grid-3">${cands.map(candidateCardHTML).join('')}</div>
+        </div>
+      `;
+    }).join('') || `<div class="empty-state">No candidates match your search.</div>`;
+  }
+
+  function openProfile(id){
+    const c = DB.candidates.find(id);
+    const pos = DB.positions.find(c.positionId);
+    document.getElementById('profile-modal-body').innerHTML = `
+      <div style="display:flex; gap:16px; align-items:center; margin-bottom:18px;">
+        <div class="candidate-avatar" style="width:72px; height:72px; font-size:22px;">${initials(c.name)}</div>
+        <div>
+          <h3 style="font-size:20px;">${escapeHtml(c.name)}</h3>
+          <div class="badge badge-upcoming" style="margin-top:6px;">${escapeHtml(pos.title)}</div>
+        </div>
+      </div>
+      <p style="font-size:13px; font-style:italic; color:var(--gold-soft); margin-bottom:16px;">"${escapeHtml(c.slogan)}"</p>
+      <div class="grid grid-2" style="margin-bottom:16px; font-size:13px;">
+        <div><strong style="color:var(--text);">Department:</strong> ${escapeHtml(c.department)}</div>
+        <div><strong style="color:var(--text);">Faculty:</strong> ${escapeHtml(c.faculty)}</div>
+        <div><strong style="color:var(--text);">Course:</strong> ${escapeHtml(c.course)}</div>
+        <div><strong style="color:var(--text);">Year:</strong> ${c.year}</div>
+      </div>
+      <hr class="divider">
+      <div style="margin-bottom:14px;"><div class="field-hint" style="margin-bottom:6px;">BIOGRAPHY</div><p style="font-size:13px;">${escapeHtml(c.bio)}</p></div>
+      <div style="margin-bottom:14px;"><div class="field-hint" style="margin-bottom:6px;">MANIFESTO</div><p style="font-size:13px;">${escapeHtml(c.manifesto)}</p></div>
+      <div style="margin-bottom:14px;"><div class="field-hint" style="margin-bottom:6px;">LEADERSHIP EXPERIENCE</div><p style="font-size:13px;">${escapeHtml(c.experience)}</p></div>
+      <div><div class="field-hint" style="margin-bottom:6px;">ACHIEVEMENTS</div><p style="font-size:13px;">${escapeHtml(c.achievements)}</p></div>
+    `;
+    document.getElementById('profile-modal').classList.add('open');
+  }
+
+  document.getElementById('search').addEventListener('input', (e) => render(e.target.value));
+  render('');
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — MUSO 2026 Election Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner glass-strong">
+    <div class="brand">
+      <div class="brand-mark">MU</div>
+      <div class="brand-text"><strong>MUSO 2026</strong><span>General Election</span></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="candidates.html">Candidates</a></li>
+      <li><a href="results.html">Results</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="register.html" class="btn btn-gold btn-sm">Register</a>
+      <button class="icon-btn nav-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<main class="page-body">
+  <div class="wrap" style="max-width:460px;">
+    <div class="eyebrow center" style="justify-content:center;">Student access</div>
+    <h1 style="font-size:30px; text-align:center; margin-bottom:8px;">Welcome back</h1>
+    <p style="text-align:center; margin-bottom:30px;">Log in with your registration number to view elections and cast your vote.</p>
+
+    <div class="glass card">
+      <form id="login-form">
+        <div class="field">
+          <label for="regNo">Registration number</label>
+          <input type="text" id="regNo" placeholder="T22-03-1102" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+          <div class="field-error" id="login-error">Incorrect registration number or password.</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; font-size:13px;">
+          <label class="checkbox-row"><input type="checkbox" id="remember"> Remember me</label>
+          <a href="#" id="forgot-link" style="color:var(--indigo-light);">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Log in to my dashboard</button>
+      </form>
+      <hr class="divider">
+      <p class="center" style="font-size:13px;">Don't have an account yet? <a href="register.html" style="color:var(--gold-soft);">Register here</a></p>
+      <p class="center" style="font-size:12px; margin-top:10px;"><a href="admin-login.html" style="color:var(--text-faint);">Electoral Commission (Admin) login →</a></p>
+    </div>
+
+    <div class="glass card" style="margin-top:18px; font-size:12px;">
+      <strong style="color:var(--text);">Demo credentials:</strong> Reg. No. <code class="tag-mono">T22-03-1102</code> · Password <code class="tag-mono">student123</code>
+    </div>
+  </div>
+</main>
+
+<!-- Forgot password modal -->
+<div class="modal-overlay" id="forgot-modal">
+  <div class="modal">
+    <h3>Reset your password</h3>
+    <p style="font-size:13px; margin-bottom:18px;">Enter your registration number and email on file. We'll set a temporary password for this demo session.</p>
+    <div class="field">
+      <label for="reset-reg">Registration number</label>
+      <input type="text" id="reset-reg" placeholder="T22-03-1102">
+    </div>
+    <div class="field">
+      <label for="reset-email">Email</label>
+      <input type="email" id="reset-email" placeholder="you@mzumbe.ac.tz">
+    </div>
+    <div class="field">
+      <label for="reset-new">New password</label>
+      <input type="password" id="reset-new" placeholder="New password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-block" data-modal-close>Cancel</button>
+      <button class="btn btn-primary btn-block" id="reset-submit">Reset password</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+  document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const regNo = document.getElementById('regNo').value.trim();
+    const password = document.getElementById('password').value;
+    const student = DB.students.all().find(s => s.regNo.toLowerCase() === regNo.toLowerCase());
+    const errEl = document.getElementById('login-error');
+
+    if (!student || student.password !== password){
+      errEl.style.display = 'block';
+      return;
+    }
+    if (student.status !== 'active'){
+      errEl.textContent = 'Your account has been deactivated. Contact the electoral commission.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+    DB.session.set({ role:'student', id: student.id });
+    DB.logAudit('LOGIN', `Student ${student.regNo} logged in.`);
+    window.location.href = 'dashboard.html';
+  });
+
+  document.getElementById('forgot-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('forgot-modal').classList.add('open');
+  });
+
+  document.getElementById('reset-submit').addEventListener('click', () => {
+    const regNo = document.getElementById('reset-reg').value.trim();
+    const email = document.getElementById('reset-email').value.trim().toLowerCase();
+    const newPass = document.getElementById('reset-new').value;
+    const student = DB.students.all().find(s => s.regNo.toLowerCase() === regNo.toLowerCase() && s.email.toLowerCase() === email);
+
+    if (!student || !newPass){
+      toast('No matching account found for that registration number and email.', 'error');
+      return;
+    }
+    student.password = newPass;
+    DB.students.save(student);
+    DB.logAudit('PASSWORD_RESET', `Password reset for ${student.regNo}.`);
+    document.getElementById('forgot-modal').classList.remove('open');
+    toast('Password reset. You can now log in with your new password.', 'success');
+  });
+</script>
+</body>
+</html>
